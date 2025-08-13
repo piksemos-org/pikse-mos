@@ -1,6 +1,7 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:piksel_mos/main.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -14,18 +15,32 @@ class _LoginScreenState extends State<LoginScreen> {
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
   bool _isPasswordVisible = false;
-  bool _isLoading = false;
+  bool _isLoading = false; // State untuk mengontrol loading
 
-  Future<void> _showErrorDialog(String message) async {
-    return showDialog<void>(
+  // Ganti fungsi _showErrorDialog di login_screen.dart
+  void _showErrorDialog(String message) {
+    // Pesan default yang lebih ramah
+    String displayMessage =
+        'Terjadi kesalahan yang tidak terduga. Mohon coba lagi.';
+
+    // Ubah pesan teknis menjadi pesan yang mudah dimengerti
+    if (message.contains('Invalid login credentials')) {
+      displayMessage =
+          'Email atau Password yang Anda masukkan salah. Mohon periksa kembali.';
+    } else if (message.contains('network')) {
+      displayMessage =
+          'Tidak dapat terhubung ke server. Periksa koneksi internet Anda.';
+    }
+
+    showCupertinoDialog(
       context: context,
-      barrierDismissible: false, // user must tap button!
-      builder: (BuildContext context) {
+      builder: (context) {
         return CupertinoAlertDialog(
           title: const Text('Login Gagal'),
-          content: Text('Terjadi kesalahan:\n\n$message'),
-          actions: <Widget>[
+          content: Text('\n$displayMessage'),
+          actions: [
             CupertinoDialogAction(
+              isDefaultAction: true,
               child: const Text('OK'),
               onPressed: () {
                 Navigator.of(context).pop();
@@ -37,13 +52,14 @@ class _LoginScreenState extends State<LoginScreen> {
     );
   }
 
-  Future<void> _signIn() async {
+  // Fungsi utama untuk proses login
+  Future<void> _login() async {
     if (!_formKey.currentState!.validate()) {
       return;
     }
 
     setState(() {
-      _isLoading = true;
+      _isLoading = true; // Tampilkan loading indicator
     });
 
     try {
@@ -55,11 +71,14 @@ class _LoginScreenState extends State<LoginScreen> {
       if (mounted && authResponse.user != null) {
         Navigator.pushReplacementNamed(context, '/main');
       }
+    } on AuthException catch (e) {
+      // Menangkap error spesifik dari Supabase
+      _showErrorDialog(e.message);
     } catch (e) {
-      if (mounted) {
-        _showErrorDialog(e.toString());
-      }
+      // Menangkap error lainnya (misal: tidak ada koneksi internet)
+      _showErrorDialog('Terjadi kesalahan yang tidak terduga.');
     } finally {
+      // Pastikan loading indicator selalu berhenti
       if (mounted) {
         setState(() {
           _isLoading = false;
@@ -79,7 +98,7 @@ class _LoginScreenState extends State<LoginScreen> {
               mainAxisAlignment: MainAxisAlignment.center,
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                // Header
+                // Header (tidak berubah)
                 const Text(
                   'Selamat Datang Kembali',
                   textAlign: TextAlign.center,
@@ -97,7 +116,7 @@ class _LoginScreenState extends State<LoginScreen> {
                 ),
                 const SizedBox(height: 48),
 
-                // Form
+                // Form (tidak berubah)
                 Form(
                   key: _formKey,
                   child: Column(
@@ -151,16 +170,23 @@ class _LoginScreenState extends State<LoginScreen> {
                 ),
                 const SizedBox(height: 24),
 
-                // Tombol Masuk
-                _isLoading
-                    ? const Center(child: CircularProgressIndicator())
-                    : ElevatedButton(
-                        onPressed: _signIn,
-                        child: const Text('Masuk'),
-                      ),
+                // Tombol Masuk yang sudah diperbaiki
+                ElevatedButton(
+                  onPressed: _isLoading ? null : _login,
+                  child: _isLoading
+                      ? const SizedBox(
+                          height: 20,
+                          width: 20,
+                          child: CircularProgressIndicator(
+                            color: Colors.white,
+                            strokeWidth: 2.0,
+                          ),
+                        )
+                      : const Text('Masuk'),
+                ),
                 const SizedBox(height: 24),
 
-                // Link ke Halaman Daftar
+                // Link ke Halaman Daftar (tidak berubah)
                 Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
