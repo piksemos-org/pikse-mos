@@ -69,6 +69,18 @@ class _LoginScreenState extends State<LoginScreen> {
       );
 
       if (mounted && authResponse.user != null) {
+        try {
+          final userId = supabase.auth.currentUser!.id;
+          final data = await supabase
+              .from('users')
+              .select('role')
+              .eq('id', userId)
+              .single();
+          userRole.value = data['role'] as String?;
+        } catch (e) {
+          userRole.value = null; // Default to no role on error
+        }
+        if (!mounted) return;
         Navigator.pushReplacementNamed(context, '/main');
       }
     } on AuthException catch (e) {

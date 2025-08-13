@@ -2,9 +2,14 @@ import 'package:flutter/material.dart';
 import 'package:piksel_mos/autentification/login_screen.dart';
 import 'package:piksel_mos/autentification/regster_screen.dart';
 import 'package:piksel_mos/boarding/boarding_screen.dart';
+import 'package:flutter/foundation.dart';
 import 'package:piksel_mos/piksel/main_screen.dart';
+import 'package:piksel_mos/piksel/upload_screen.dart';
 import 'package:piksel_mos/splash_screen.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+
+// Global ValueNotifier to hold the user's role.
+final ValueNotifier<String?> userRole = ValueNotifier(null);
 
 void main() async {
   // Tambahkan 'async' di sini
@@ -100,6 +105,7 @@ class MyApp extends StatelessWidget {
         '/login': (context) => const LoginScreen(),
         '/register': (context) => const RegisterScreen(),
         '/main': (context) => const MainScreen(),
+        '/upload': (context) => const UploadScreen(),
       },
     );
   }

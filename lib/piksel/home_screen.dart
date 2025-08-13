@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:piksel_mos/main.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:video_player/video_player.dart';
 import 'package:readmore/readmore.dart';
@@ -36,31 +37,74 @@ class _HomeScreenState extends State<HomeScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: const Text('Piksel Mos Feed'), elevation: 0.5),
-      body: FutureBuilder<List<Map<String, dynamic>>>(
-        future: _postsFuture,
-        builder: (context, snapshot) {
-          if (snapshot.connectionState == ConnectionState.waiting) {
-            return const Center(child: CircularProgressIndicator());
-          }
-          if (snapshot.hasError) {
-            return Center(child: Text('Error: ${snapshot.error}'));
-          }
-          if (!snapshot.hasData || snapshot.data!.isEmpty) {
-            return const Center(child: Text('No posts found.'));
-          }
+    return ValueListenableBuilder<String?>(
+      valueListenable: userRole,
+      builder: (context, role, child) {
+        return Scaffold(
+          appBar: AppBar(
+            title: const Text(
+              'Piksel Mos Feed',
+              style: TextStyle(
+                color: Colors.white,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            backgroundColor: const Color(0xFF069494),
+            elevation: 2,
+          ),
+          body: FutureBuilder<List<Map<String, dynamic>>>(
+            future: _postsFuture,
+            builder: (context, snapshot) {
+              if (snapshot.connectionState == ConnectionState.waiting) {
+                return const Center(child: CircularProgressIndicator());
+              }
+              if (snapshot.hasError) {
+                return Center(child: Text('Error: ${snapshot.error}'));
+              }
+              if (!snapshot.hasData || snapshot.data!.isEmpty) {
+                return const Center(child: Text('No posts found.'));
+              }
 
-          final posts = snapshot.data!;
-          return ListView.builder(
-            itemCount: posts.length,
-            itemBuilder: (context, index) {
-              final post = posts[index];
-              return PostCard(post: post);
+              final posts = snapshot.data!;
+              return ListView.builder(
+                itemCount: posts.length,
+                itemBuilder: (context, index) {
+                  final post = posts[index];
+                  return PostCard(post: post);
+                },
+              );
             },
-          );
-        },
-      ),
+          ),
+          floatingActionButton: ValueListenableBuilder(
+            valueListenable: userRole,
+            builder: (context, role, child) {
+              if (role == 'admin') {
+                return FloatingActionButton(
+                  onPressed: () async {
+                    final result = await Navigator.pushNamed(
+                      context,
+                      '/upload',
+                    );
+                    if (result == true) {
+                      // Refresh the feed
+                      setState(() {
+                        _postsFuture = _fetchPosts();
+                      });
+                    }
+                  },
+                  backgroundColor: const Color(0xFF069494),
+                  child: const Icon(
+                    Icons.add_a_photo_outlined,
+                    color: Colors.white,
+                  ),
+                );
+              } else {
+                return const SizedBox.shrink();
+              }
+            },
+          ),
+        );
+      },
     );
   }
 }
