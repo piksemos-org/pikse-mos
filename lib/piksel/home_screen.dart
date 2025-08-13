@@ -75,18 +75,14 @@ class _HomeScreenState extends State<HomeScreen> {
               );
             },
           ),
-          floatingActionButton: ValueListenableBuilder(
-            valueListenable: userRole,
-            builder: (context, role, child) {
-              if (role == 'admin') {
-                return FloatingActionButton(
+          floatingActionButton: role == 'admin'
+              ? FloatingActionButton(
                   onPressed: () async {
                     final result = await Navigator.pushNamed(
                       context,
                       '/upload',
                     );
                     if (result == true) {
-                      // Refresh the feed
                       setState(() {
                         _postsFuture = _fetchPosts();
                       });
@@ -97,12 +93,8 @@ class _HomeScreenState extends State<HomeScreen> {
                     Icons.add_a_photo_outlined,
                     color: Colors.white,
                   ),
-                );
-              } else {
-                return const SizedBox.shrink();
-              }
-            },
-          ),
+                )
+              : null,
         );
       },
     );
