@@ -24,6 +24,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
         final authResponse = await supabase.auth.signUp(
           email: _emailController.text.trim(),
           password: _passwordController.text.trim(),
+          data: {'username': _usernameController.text.trim()},
         );
 
         // Pastikan pendaftaran otentikasi berhasil dan kita mendapatkan user
