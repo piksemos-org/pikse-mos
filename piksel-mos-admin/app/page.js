@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { supabase } from 'lib/supabaseClient';
+import { supabase } from 'lib/supabaseClient'; // Menggunakan alamat pintas
 
 export default function LoginPage() {
   const [email, setEmail] = useState('');

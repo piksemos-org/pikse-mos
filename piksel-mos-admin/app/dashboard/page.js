@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { supabase } from 'lib/supabaseClient';
+import { supabase } from 'lib/supabaseClient'; // Menggunakan alamat pintas
 
 export default function DashboardPage() {
   const [user, setUser] = useState(null);
@@ -11,7 +11,7 @@ export default function DashboardPage() {
     async function checkUser() {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) {
-        window.location.href = '/'; // Arahkan ke login jika tidak ada sesi
+        window.location.href = '/';
       } else {
         setUser(session.user);
         setLoading(false);
@@ -35,9 +35,8 @@ export default function DashboardPage() {
       <p>Selamat datang, {user?.email}</p>
       <button onClick={handleLogout}>Logout</button>
       <hr style={{ margin: '20px 0' }}/>
-      {/* Di sini nanti Anda akan menambahkan UI untuk mengelola postingan */}
       <h2>Manajemen Konten</h2>
-      <p>Area untuk menambah, mengedit, dan menghapus postingan akan ada di sini.</p>
+      <p>Area untuk mengelola postingan akan ada di sini.</p>
     </div>
   );
 }
