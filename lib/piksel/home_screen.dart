@@ -2,11 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:piksel_mos/main.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:video_player/video_player.dart';
+import 'package:readmore/readmore.dart';
 import 'package:piksel_mos/information/notification_screen.dart';
 import 'package:piksel_mos/information/message_screen.dart';
-import 'package:readmore/readmore.dart';
-
-final supabase = Supabase.instance.client;
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -16,7 +14,7 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
-  late Future<List<Map<String, dynamic>>> _postsFuture;
+  late Future<List<dynamic>> _postsFuture;
 
   @override
   void initState() {
@@ -24,15 +22,20 @@ class _HomeScreenState extends State<HomeScreen> {
     _postsFuture = _fetchPosts();
   }
 
-  Future<List<Map<String, dynamic>>> _fetchPosts() async {
+  Future<List<dynamic>> _fetchPosts() async {
     try {
       final response = await supabase
           .from('posts')
           .select()
           .order('created_at', ascending: false);
-      return List<Map<String, dynamic>>.from(response);
+      return response;
     } catch (e) {
-      throw Exception('Failed to load posts: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Gagal memuat postingan: $e')));
+      }
+      return [];
     }
   }
 
@@ -75,7 +78,7 @@ class _HomeScreenState extends State<HomeScreen> {
             backgroundColor: const Color(0xFF069494),
             elevation: 0,
           ),
-          body: FutureBuilder<List<Map<String, dynamic>>>(
+          body: FutureBuilder<List<dynamic>>(
             future: _postsFuture,
             builder: (context, snapshot) {
               if (snapshot.connectionState == ConnectionState.waiting) {
@@ -92,7 +95,7 @@ class _HomeScreenState extends State<HomeScreen> {
               return ListView.builder(
                 itemCount: posts.length,
                 itemBuilder: (context, index) {
-                  final post = posts[index];
+                  final post = posts[index] as Map<String, dynamic>;
                   return PostCard(post: post);
                 },
               );
@@ -134,24 +137,36 @@ class PostCard extends StatelessWidget {
     final mediaUrl = post['media_url'] as String?;
     final mediaType = post['media_type'] as String?;
     final caption = post['caption'] as String?;
-    final aspectRatio = post['media_aspect_ratio'] as double? ?? 1.0;
+    final title = post['title'] as String?; // Ambil judul dari data
 
+    // PERBAIKAN: Konversi nilai aspect ratio dengan aman
+    final aspectRatioValue = post['media_aspect_ratio'];
+    final double aspectRatio = (aspectRatioValue as num? ?? 1.0).toDouble();
+
+    // Menggunakan Column untuk layout edge-to-edge
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const ListTile(
-          leading: CircleAvatar(
-            // You can use a placeholder or a specific admin image
-            backgroundImage: NetworkImage('https://placekitten.com/g/200/200'),
+        // Header Postingan (Sekarang hanya judul)
+        if (title != null && title.isNotEmpty)
+          Padding(
+            padding: const EdgeInsets.symmetric(
+              horizontal: 16.0,
+              vertical: 8.0,
+            ),
+            child: Text(
+              title,
+              style: Theme.of(
+                context,
+              ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
+            ),
           ),
-          title: Text(
-            "Piksel Mos Admin",
-            style: TextStyle(fontWeight: FontWeight.bold),
-          ),
-        ),
+        if (title != null && title.isNotEmpty) const SizedBox(height: 4),
+
+        // Konten Media dengan AspectRatio dinamis
         if (mediaUrl != null && mediaType != null)
           AspectRatio(
-            aspectRatio: aspectRatio,
+            aspectRatio: aspectRatio, // Menggunakan nilai yang sudah dikonversi
             child: mediaType == 'video'
                 ? VideoPlayerWidget(videoUrl: mediaUrl)
                 : Image.network(
@@ -168,32 +183,39 @@ class PostCard extends StatelessWidget {
                     },
                   ),
           ),
-        Row(
-          children: [
-            IconButton(
-              icon: const Icon(Icons.favorite_border),
-              onPressed: () {},
-            ),
-            IconButton(
-              icon: const Icon(Icons.share_outlined),
-              onPressed: () {},
-            ),
-          ],
+
+        // Tombol Aksi
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 8.0, vertical: 4.0),
+          child: Row(
+            children: [
+              IconButton(
+                icon: const Icon(Icons.favorite_border_outlined),
+                onPressed: () {},
+              ),
+              IconButton(
+                icon: const Icon(Icons.share_outlined),
+                onPressed: () {},
+              ),
+            ],
+          ),
         ),
+
+        // Deskripsi/Caption
         if (caption != null && caption.isNotEmpty)
           Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16.0),
+            padding: const EdgeInsets.symmetric(
+              horizontal: 16.0,
+            ).copyWith(bottom: 24.0),
             child: ReadMoreText(
               caption,
               trimLines: 2,
-              colorClickableText: Colors.pink,
+              colorClickableText: Colors.blue,
               trimMode: TrimMode.Line,
               trimCollapsedText: '...more',
-              trimExpandedText: ' show less',
-              style: Theme.of(context).textTheme.bodyMedium,
+              trimExpandedText: ' less',
             ),
           ),
-        const Divider(),
       ],
     );
   }
@@ -201,7 +223,6 @@ class PostCard extends StatelessWidget {
 
 class VideoPlayerWidget extends StatefulWidget {
   final String videoUrl;
-
   const VideoPlayerWidget({super.key, required this.videoUrl});
 
   @override
@@ -215,8 +236,7 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
   @override
   void initState() {
     super.initState();
-    // ignore: deprecated_member_use
-    _controller = VideoPlayerController.network(widget.videoUrl);
+    _controller = VideoPlayerController.networkUrl(Uri.parse(widget.videoUrl));
     _initializeVideoPlayerFuture = _controller.initialize().then((_) {
       _controller.setLooping(true);
       _controller.play();
@@ -235,8 +255,12 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
     return FutureBuilder(
       future: _initializeVideoPlayerFuture,
       builder: (context, snapshot) {
-        if (snapshot.connectionState == ConnectionState.done) {
-          return VideoPlayer(_controller);
+        if (snapshot.connectionState == ConnectionState.done &&
+            !_controller.value.hasError) {
+          return AspectRatio(
+            aspectRatio: _controller.value.aspectRatio,
+            child: VideoPlayer(_controller),
+          );
         } else {
           return const Center(child: CircularProgressIndicator());
         }

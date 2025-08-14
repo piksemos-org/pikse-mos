@@ -1,36 +1,74 @@
+import 'dart:async'; // Import untuk StreamSubscription
+import 'package:app_links/app_links.dart'; // Import package app_links
 import 'package:flutter/material.dart';
 import 'package:piksel_mos/autentification/login_screen.dart';
 import 'package:piksel_mos/autentification/regster_screen.dart';
 import 'package:piksel_mos/boarding/boarding_screen.dart';
-import 'package:flutter/foundation.dart';
+import 'package:piksel_mos/information/message_screen.dart';
+import 'package:piksel_mos/information/notification_screen.dart';
+import 'package:piksel_mos/piksel/kamu/storage_screen.dart';
 import 'package:piksel_mos/piksel/main_screen.dart';
 import 'package:piksel_mos/piksel/upload_screen.dart';
-import 'package:piksel_mos/piksel/kamu/storage_screen.dart';
 import 'package:piksel_mos/splash_screen.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
-// Global ValueNotifier to hold the user's role.
-final ValueNotifier<String?> userRole = ValueNotifier(null);
-
 void main() async {
-  // Tambahkan 'async' di sini
-  WidgetsFlutterBinding.ensureInitialized(); // Wajib ada untuk inisialisasi
+  WidgetsFlutterBinding.ensureInitialized();
 
   await Supabase.initialize(
-    // Inisialisasi Supabase
-    url: 'https://yltxsucpzthnzchziakc.supabase.co', // Paste URL Anda di sini
+    url: 'https://yltxsucpzthnzchziakc.supabase.co',
     anonKey:
-        'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InlsdHhzdWNwenRobnpjaHppYWtjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTUwOTQxNDAsImV4cCI6MjA3MDY3MDE0MH0.06652ebnPe0k6n9qVf4CI8x1OORUVaWnjjrLbCPcBq4', // Paste anon key Anda di sini
+        'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InlsdHhzdWNwenRobnpjaHppYWtjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTUwOTQxNDAsImV4cCI6MjA3MDY3MDE0MH0.06652ebnPe0k6n9qVf4CI8x1OORUVaWnjjrLbCPcBq4',
   );
 
   runApp(const MyApp());
 }
 
-// Variabel global untuk akses mudah ke client Supabase
 final supabase = Supabase.instance.client;
+final ValueNotifier<String?> userRole = ValueNotifier(null);
 
-class MyApp extends StatelessWidget {
+// PERBAIKAN: MyApp diubah menjadi StatefulWidget untuk menangani Stream
+class MyApp extends StatefulWidget {
   const MyApp({super.key});
+
+  @override
+  State<MyApp> createState() => _MyAppState();
+}
+
+class _MyAppState extends State<MyApp> {
+  late AppLinks _appLinks;
+  StreamSubscription<Uri>? _linkSubscription;
+
+  @override
+  void initState() {
+    super.initState();
+    // PERBAIKAN: Memulai listener untuk deep link
+    _initDeepLinks();
+  }
+
+  @override
+  void dispose() {
+    // PERBAIKAN: Membatalkan listener saat aplikasi ditutup
+    _linkSubscription?.cancel();
+    super.dispose();
+  }
+
+  // PERBAIKAN: Fungsi baru untuk menangani deep links dengan metode Stream
+  Future<void> _initDeepLinks() async {
+    _appLinks = AppLinks();
+
+    // Berlangganan (listen) ke stream untuk setiap link yang masuk
+    _linkSubscription = _appLinks.uriLinkStream.listen((uri) {
+      // Anda bisa menambahkan logika navigasi di sini berdasarkan link yang masuk
+      // Contoh: Buka halaman detail jika linknya adalah pikselmos://details/123
+      print('Menerima link: $uri');
+      //
+      // if (uri.host == 'details') {
+      //   final id = uri.pathSegments.first;
+      //   // Navigator.push(...);
+      // }
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -108,6 +146,8 @@ class MyApp extends StatelessWidget {
         '/main': (context) => const MainScreen(),
         '/upload': (context) => const UploadScreen(),
         '/storage': (context) => const StorageScreen(),
+        '/notifications': (context) => const NotificationScreen(),
+        '/messages': (context) => const MessageScreen(),
       },
     );
   }
