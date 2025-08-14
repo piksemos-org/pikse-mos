@@ -43,70 +43,72 @@ class _KamuScreenState extends State<KamuScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: _userData == null
-          ? const Center(child: CircularProgressIndicator())
-          : SingleChildScrollView(
-              child: Column(
-                children: [
-                  UserProfileCard(
-                    username: _userData!['username'],
-                    email: _userData!['email'],
-                    role: _userData!['role'],
-                    avatarUrl: _userData!['avatar_url'],
-                  ),
-                  const Padding(
-                    padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                    child: Align(
-                      alignment: Alignment.centerLeft,
-                      child: Text(
-                        'Navigasi',
-                        style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold,
+      backgroundColor: const Color(0xFF069494),
+      body: CustomScrollView(
+        slivers: [
+          SliverAppBar(
+            backgroundColor: Colors.transparent,
+            elevation: 0,
+            pinned: true,
+            title: const SizedBox.shrink(),
+          ),
+          SliverToBoxAdapter(
+            child: UserProfileCard(
+              username: _userData?['username'] ?? '',
+              email: _userData?['email'] ?? '',
+              role: _userData?['role'] ?? 'Pengguna',
+              avatarUrl: _userData?['avatar_url'],
+              onProfileUpdated: _fetchUserProfile,
+            ),
+          ),
+          SliverToBoxAdapter(
+            child: _userData == null
+                ? const Center(child: CircularProgressIndicator())
+                : Column(
+                    children: [
+                      const NavigationGrid(),
+                      SettingsCard(
+                        title: 'Pengaturan Profil',
+                        items: [
+                          {'icon': Icons.edit, 'title': 'Edit Profil'},
+                          {'icon': Icons.security, 'title': 'Keamanan'},
+                        ],
+                      ),
+                      SettingsCard(
+                        title: 'Area Dukungan',
+                        items: [
+                          {
+                            'icon': Icons.description,
+                            'title': 'Syarat & Ketentuan',
+                          },
+                          {'icon': Icons.support_agent, 'title': 'Bantuan CS'},
+                        ],
+                      ),
+                      Padding(
+                        padding: const EdgeInsets.all(16.0),
+                        child: ElevatedButton.icon(
+                          icon: const Icon(Icons.logout),
+                          label: const Text('Keluar'),
+                          style: ElevatedButton.styleFrom(
+                            minimumSize: const Size.fromHeight(50),
+                            backgroundColor: Colors.red.shade600,
+                          ),
+                          onPressed: () async {
+                            await _supabase.auth.signOut();
+                            Navigator.pushNamedAndRemoveUntil(
+                              context,
+                              '/login',
+                              (route) => false,
+                            );
+                          },
                         ),
                       ),
-                    ),
-                  ),
-                  const NavigationGrid(),
-                  SettingsCard(
-                    title: 'Pengaturan Profil',
-                    items: [
-                      {'icon': Icons.edit, 'title': 'Edit Profil'},
-                      {'icon': Icons.security, 'title': 'Keamanan'},
                     ],
                   ),
-                  SettingsCard(
-                    title: 'Area Dukungan',
-                    items: [
-                      {
-                        'icon': Icons.description,
-                        'title': 'Syarat & Ketentuan',
-                      },
-                      {'icon': Icons.support_agent, 'title': 'Bantuan CS'},
-                    ],
-                  ),
-                  Padding(
-                    padding: const EdgeInsets.all(16.0),
-                    child: ElevatedButton.icon(
-                      icon: const Icon(Icons.logout),
-                      label: const Text('Keluar'),
-                      style: ElevatedButton.styleFrom(
-                        minimumSize: const Size.fromHeight(50),
-                        backgroundColor: Colors.red.shade600,
-                      ),
-                      onPressed: () async {
-                        await _supabase.auth.signOut();
-                        Navigator.pushNamedAndRemoveUntil(
-                          context,
-                          '/login',
-                          (route) => false,
-                        );
-                      },
-                    ),
-                  ),
-                ],
-              ),
-            ),
+          ),
+          const SliverPadding(padding: EdgeInsets.only(bottom: 32)),
+        ],
+      ),
     );
   }
 }

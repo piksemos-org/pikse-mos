@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../widgets/material_selection_screen.dart';
 
 class DesainScreen extends StatelessWidget {
   const DesainScreen({super.key});
@@ -7,10 +8,11 @@ class DesainScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Desain'),
+        title: const Text('Pilih Bahan Desain'),
         backgroundColor: const Color(0xFF069494),
+        foregroundColor: Colors.white,
       ),
-      body: const Center(child: Text('Halaman Desain')),
+      body: const MaterialSelectionScreen(),
     );
   }
 }

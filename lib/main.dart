@@ -5,6 +5,7 @@ import 'package:piksel_mos/boarding/boarding_screen.dart';
 import 'package:flutter/foundation.dart';
 import 'package:piksel_mos/piksel/main_screen.dart';
 import 'package:piksel_mos/piksel/upload_screen.dart';
+import 'package:piksel_mos/piksel/kamu/storage_screen.dart';
 import 'package:piksel_mos/splash_screen.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
@@ -106,6 +107,7 @@ class MyApp extends StatelessWidget {
         '/register': (context) => const RegisterScreen(),
         '/main': (context) => const MainScreen(),
         '/upload': (context) => const UploadScreen(),
+        '/storage': (context) => const StorageScreen(),
       },
     );
   }
