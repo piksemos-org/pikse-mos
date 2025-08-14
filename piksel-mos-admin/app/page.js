@@ -1,64 +1,52 @@
-// app/page.js
-
-'use client'; // Baris ini penting, memberitahu Next.js bahwa ini adalah komponen interaktif
+'use client';
 
 import { useState } from 'react';
-import { supabase } from '@/lib/supabaseClient';
+import { supabase } from 'lib/supabaseClient';
 
 export default function LoginPage() {
-  // State untuk menyimpan input dari pengguna (seperti TextEditingController di Flutter)
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState(null);
+  const [loading, setLoading] = useState(false);
 
-  // ================================================================
-  // DI SINILAH ANDA MENEMPATKAN FUNGSI handleLogin ANDA
-  // ================================================================
   async function handleLogin() {
-    setError(null); // Reset pesan error setiap kali tombol ditekan
+    setLoading(true);
+    setError(null);
     try {
       const { error } = await supabase.auth.signInWithPassword({
         email: email,
         password: password,
       });
-
-      if (error) {
-        throw error; // Lempar error jika Supabase mengembalikannya
-      }
-
-      // Jika sukses, arahkan ke dashboard
-      window.location.href = '/dashboard'; // Anda akan membuat halaman ini nanti
-
+      if (error) throw error;
+      window.location.href = '/dashboard';
     } catch (error) {
-      // Jika terjadi error, simpan pesannya untuk ditampilkan
       setError(error.message);
+    } finally {
+      setLoading(false);
     }
   }
 
-  // Ini adalah bagian UI (seperti widget build() di Flutter)
   return (
-    <div>
+    <div style={{ padding: '50px', maxWidth: '400px', margin: 'auto' }}>
       <h1>Admin Login</h1>
       <input
         type="email"
         placeholder="Email"
         value={email}
         onChange={(e) => setEmail(e.target.value)}
+        style={{ width: '100%', padding: '8px', marginBottom: '10px' }}
       />
-      <br />
       <input
         type="password"
         placeholder="Password"
         value={password}
         onChange={(e) => setPassword(e.target.value)}
+        style={{ width: '100%', padding: '8px', marginBottom: '20px' }}
       />
-      <br />
-      <button onClick={handleLogin}>
-        Masuk
+      <button onClick={handleLogin} disabled={loading} style={{ width: '100%', padding: '10px' }}>
+        {loading ? 'Loading...' : 'Masuk'}
       </button>
-
-      {/* Tampilkan pesan error jika ada */}
-      {error && <p style={{ color: 'red' }}>{error}</p>}
+      {error && <p style={{ color: 'red', marginTop: '10px' }}>{error}</p>}
     </div>
   );
 }
