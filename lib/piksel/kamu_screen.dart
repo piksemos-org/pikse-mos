@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
-import 'kamu/profile_card/user_profile_card.dart';
-import 'kamu/profile_navigation/navigation_grid.dart';
-import 'kamu/widgets/settings_card.dart';
+import 'package:piksel_mos/main.dart'; // Pastikan import ValueNotifier ada
+import 'package:piksel_mos/piksel/kamu/profile_card/user_profile_card.dart';
+import 'package:piksel_mos/piksel/kamu/profile_navigation/navigation_grid.dart';
+import 'package:piksel_mos/piksel/kamu/widgets/settings_card.dart';
 
 class KamuScreen extends StatefulWidget {
   const KamuScreen({super.key});
@@ -13,7 +13,7 @@ class KamuScreen extends StatefulWidget {
 
 class _KamuScreenState extends State<KamuScreen> {
   Map<String, dynamic>? _userData;
-  final SupabaseClient _supabase = Supabase.instance.client;
+  bool _isLoading = true;
 
   @override
   void initState() {
@@ -22,61 +22,83 @@ class _KamuScreenState extends State<KamuScreen> {
   }
 
   Future<void> _fetchUserProfile() async {
+    // Menampilkan loading indicator saat mengambil data
+    if (mounted) {
+      setState(() {
+        _isLoading = true;
+      });
+    }
+
     try {
-      final user = _supabase.auth.currentUser;
-      final response = await _supabase
+      final user = supabase.auth.currentUser;
+      if (user == null) throw 'User tidak ditemukan';
+
+      final response = await supabase
           .from('users')
           .select('username, email, role, avatar_url')
-          .eq('id', user!.id)
+          .eq('id', user.id)
           .single();
 
-      setState(() {
-        _userData = response;
-      });
+      if (mounted) {
+        setState(() {
+          _userData = response;
+          _isLoading = false;
+        });
+      }
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Gagal memuat profil: ${e.toString()}')),
-      );
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Gagal memuat profil: ${e.toString()}')),
+        );
+      }
     }
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      // PERBAIKAN: Latar belakang utama diatur di sini
       backgroundColor: const Color(0xFF069494),
-      body: CustomScrollView(
-        slivers: [
-          SliverAppBar(
-            backgroundColor: Colors.transparent,
-            elevation: 0,
-            pinned: true,
-            title: const SizedBox.shrink(),
-          ),
-          SliverToBoxAdapter(
-            child: UserProfileCard(
-              username: _userData?['username'] ?? '',
-              email: _userData?['email'] ?? '',
-              role: _userData?['role'] ?? 'Pengguna',
-              avatarUrl: _userData?['avatar_url'],
-              onProfileUpdated: _fetchUserProfile,
-            ),
-          ),
-          SliverToBoxAdapter(
-            child: _userData == null
-                ? const Center(child: CircularProgressIndicator())
-                : Column(
+      body: _isLoading
+          ? const Center(child: CircularProgressIndicator(color: Colors.white))
+          : CustomScrollView(
+              slivers: [
+                // PERBAIKAN: Header transparan yang kosong dan menempel
+                const SliverAppBar(
+                  backgroundColor: Colors.transparent,
+                  elevation: 0,
+                  pinned: true,
+                  title: SizedBox.shrink(), // Judul dikosongkan
+                ),
+
+                // PERBAIKAN: Kartu profil diletakkan sebagai item pertama di scroll view
+                SliverToBoxAdapter(
+                  child: UserProfileCard(
+                    // Mengirim seluruh data pengguna
+                    userData: _userData ?? {},
+                    // PERBAIKAN KRUSIAL: Mengirim fungsi refresh ke child widget
+                    onProfileUpdated: _fetchUserProfile,
+                  ),
+                ),
+
+                // Widget lainnya
+                SliverToBoxAdapter(
+                  child: Column(
                     children: [
                       const NavigationGrid(),
                       SettingsCard(
                         title: 'Pengaturan Profil',
-                        items: [
+                        items: const [
                           {'icon': Icons.edit, 'title': 'Edit Profil'},
                           {'icon': Icons.security, 'title': 'Keamanan'},
                         ],
                       ),
                       SettingsCard(
                         title: 'Area Dukungan',
-                        items: [
+                        items: const [
                           {
                             'icon': Icons.description,
                             'title': 'Syarat & Ketentuan',
@@ -94,21 +116,23 @@ class _KamuScreenState extends State<KamuScreen> {
                             backgroundColor: Colors.red.shade600,
                           ),
                           onPressed: () async {
-                            await _supabase.auth.signOut();
-                            Navigator.pushNamedAndRemoveUntil(
-                              context,
-                              '/login',
-                              (route) => false,
-                            );
+                            await supabase.auth.signOut();
+                            if (mounted) {
+                              Navigator.pushNamedAndRemoveUntil(
+                                context,
+                                '/login',
+                                (route) => false,
+                              );
+                            }
                           },
                         ),
                       ),
+                      const SizedBox(height: 32),
                     ],
                   ),
-          ),
-          const SliverPadding(padding: EdgeInsets.only(bottom: 32)),
-        ],
-      ),
+                ),
+              ],
+            ),
     );
   }
 }

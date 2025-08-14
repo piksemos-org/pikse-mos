@@ -1,213 +1,192 @@
+import 'dart:io';
 import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-import 'dart:io';
 
 class UserProfileCard extends StatefulWidget {
-  final String username;
-  final String email;
-  final String role;
-  final String? avatarUrl;
-  final Function() onProfileUpdated;
+  final Map<String, dynamic> userData;
+  final VoidCallback onProfileUpdated; // PERBAIKAN: Callback function
 
   const UserProfileCard({
-    required this.username,
-    required this.email,
-    required this.role,
-    this.avatarUrl,
-    required this.onProfileUpdated,
-    Key? key,
-  }) : super(key: key);
+    super.key,
+    required this.userData,
+    required this.onProfileUpdated, // PERBAIKAN: Callback function
+  });
 
   @override
-  _UserProfileCardState createState() => _UserProfileCardState();
+  State<UserProfileCard> createState() => _UserProfileCardState();
 }
 
 class _UserProfileCardState extends State<UserProfileCard> {
-  final SupabaseClient _supabase = Supabase.instance.client;
-  late String? _avatarUrl = widget.avatarUrl;
-
   Future<void> _uploadAvatar() async {
     final picker = ImagePicker();
-    final XFile? image = await picker.pickImage(source: ImageSource.gallery);
+    final imageFile = await picker.pickImage(
+      source: ImageSource.gallery,
+      imageQuality: 50,
+    );
 
-    if (image == null) return;
+    if (imageFile == null) return;
 
     try {
-      final user = _supabase.auth.currentUser;
-      final filePath =
-          'avatars/${user!.id}/${DateTime.now().millisecondsSinceEpoch}.jpg';
+      final user = Supabase.instance.client.auth.currentUser;
+      if (user == null) return;
 
-      await _supabase.storage
+      final bytes = await imageFile.readAsBytes();
+      final fileExt = imageFile.path.split('.').last;
+      final fileName = '${DateTime.now().toIso8601String()}.$fileExt';
+      final filePath = '${user.id}/$fileName';
+
+      await Supabase.instance.client.storage
           .from('avatars')
-          .upload(filePath, File(image.path));
+          .uploadBinary(filePath, bytes);
 
-      final newAvatarUrl = _supabase.storage
+      final imageUrl = Supabase.instance.client.storage
           .from('avatars')
           .getPublicUrl(filePath);
 
-      await _supabase
+      await Supabase.instance.client
           .from('users')
-          .update({'avatar_url': newAvatarUrl})
+          .update({'avatar_url': imageUrl})
           .eq('id', user.id);
 
-      setState(() => _avatarUrl = newAvatarUrl);
-      widget.onProfileUpdated();
-
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Foto profil berhasil diperbarui')),
-      );
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Foto profil berhasil diperbarui')),
+        );
+        // PERBAIKAN KRUSIAL: Panggil callback untuk memberitahu parent
+        widget.onProfileUpdated();
+      }
     } catch (e) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text('Error: ${e.toString()}')));
+      if (mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Error: ${e.toString()}')));
+      }
     }
   }
 
   @override
   Widget build(BuildContext context) {
+    final avatarUrl = widget.userData['avatar_url'] as String?;
+    final username = widget.userData['username'] ?? 'Nama Pengguna';
+    final email = widget.userData['email'] ?? 'email@pengguna.com';
+    final role = widget.userData['role'] ?? 'user';
+
+    // PERBAIKAN: Memaksa rasio kartu menjadi 3:4
     return AspectRatio(
       aspectRatio: 3 / 4,
-      child: InkWell(
-        onTap: _uploadAvatar,
-        child: Container(
-          margin: const EdgeInsets.all(16),
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(16),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withOpacity(0.1),
-                blurRadius: 10,
-                offset: const Offset(0, 5),
+      child: Card(
+        margin: const EdgeInsets.symmetric(horizontal: 16),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        clipBehavior:
+            Clip.antiAlias, // PERBAIKAN: Memastikan corner tetap tumpul
+        child: InkWell(
+          onTap: _uploadAvatar,
+          child: Stack(
+            fit: StackFit.expand,
+            children: [
+              // Latar belakang gambar
+              if (avatarUrl != null)
+                Image.network(
+                  avatarUrl,
+                  fit: BoxFit.cover,
+                  errorBuilder: (context, error, stackTrace) =>
+                      _buildPlaceholder(),
+                  loadingBuilder: (context, child, progress) {
+                    if (progress == null) return child;
+                    return const Center(child: CircularProgressIndicator());
+                  },
+                )
+              else
+                _buildPlaceholder(),
+
+              // Gradient Overlay
+              Container(
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: [Colors.transparent, Colors.black.withOpacity(0.7)],
+                    begin: Alignment.topCenter,
+                    end: Alignment.bottomCenter,
+                    stops: const [0.5, 1.0],
+                  ),
+                ),
+              ),
+
+              // Teks Info
+              Positioned(
+                bottom: 16,
+                left: 16,
+                right: 16,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      username,
+                      style: const TextStyle(
+                        fontSize: 24,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.white,
+                        shadows: [Shadow(blurRadius: 2, color: Colors.black54)],
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      email,
+                      style: const TextStyle(
+                        fontSize: 16,
+                        color: Colors.white70,
+                        shadows: [Shadow(blurRadius: 2, color: Colors.black54)],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+
+              // Badge Role
+              Positioned(
+                bottom: 16,
+                right: 16,
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(12),
+                  child: BackdropFilter(
+                    filter: ImageFilter.blur(sigmaX: 5, sigmaY: 5),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 6,
+                      ),
+                      decoration: BoxDecoration(
+                        color: Colors.black.withOpacity(0.25),
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(
+                          color: Colors.white.withOpacity(0.2),
+                        ),
+                      ),
+                      child: Text(
+                        role.toUpperCase(),
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.w600,
+                          fontSize: 12,
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
               ),
             ],
           ),
-          child: Card(
-            elevation: 0,
-            margin: EdgeInsets.zero,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(16),
-            ),
-            clipBehavior: Clip.antiAlias,
-            child: Stack(
-              children: [
-                // Layer 1: Background Image
-                if (_avatarUrl != null)
-                  Image.network(
-                    _avatarUrl!,
-                    width: double.infinity,
-                    height: double.infinity,
-                    fit: BoxFit.cover,
-                    loadingBuilder: (context, child, loadingProgress) {
-                      if (loadingProgress == null) return child;
-                      return Center(
-                        child: CircularProgressIndicator(
-                          value: loadingProgress.expectedTotalBytes != null
-                              ? loadingProgress.cumulativeBytesLoaded /
-                                    loadingProgress.expectedTotalBytes!
-                              : null,
-                        ),
-                      );
-                    },
-                    errorBuilder: (context, error, stackTrace) => Container(
-                      color: Colors.grey,
-                      child: const Center(
-                        child: Icon(
-                          Icons.person,
-                          size: 60,
-                          color: Colors.white,
-                        ),
-                      ),
-                    ),
-                  )
-                else
-                  Container(
-                    color: Colors.grey,
-                    child: const Center(
-                      child: Icon(Icons.person, size: 60, color: Colors.white),
-                    ),
-                  ),
-
-                // Layer 2: Gradient Overlay
-                Container(
-                  decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      colors: [
-                        Colors.transparent,
-                        Colors.black.withOpacity(0.6),
-                      ],
-                      begin: Alignment.topCenter,
-                      end: Alignment.bottomCenter,
-                      stops: const [0.5, 1.0],
-                    ),
-                  ),
-                ),
-
-                // Text Content
-                Positioned(
-                  bottom: 16,
-                  left: 16,
-                  right: 16,
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        widget.username,
-                        style: const TextStyle(
-                          fontSize: 24,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.white,
-                        ),
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        widget.email,
-                        style: TextStyle(
-                          fontSize: 16,
-                          color: Colors.white.withOpacity(0.8),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-
-                // Glassmorphism Role Badge
-                Positioned(
-                  bottom: 16,
-                  right: 16,
-                  child: ClipRRect(
-                    borderRadius: BorderRadius.circular(20),
-                    child: BackdropFilter(
-                      filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 12,
-                          vertical: 8,
-                        ),
-                        decoration: BoxDecoration(
-                          borderRadius: BorderRadius.circular(20),
-                          border: Border.all(
-                            color: Colors.white.withOpacity(0.2),
-                          ),
-                          color: Colors.black.withOpacity(0.2),
-                        ),
-                        child: Text(
-                          widget.role.toUpperCase(),
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontWeight: FontWeight.bold,
-                            fontSize: 14,
-                          ),
-                        ),
-                      ),
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
         ),
+      ),
+    );
+  }
+
+  Widget _buildPlaceholder() {
+    return Container(
+      color: Colors.grey.shade400,
+      child: const Center(
+        child: Icon(Icons.person, size: 80, color: Colors.white70),
       ),
     );
   }

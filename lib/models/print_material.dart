@@ -1,5 +1,5 @@
 class PrintMaterial {
-  final String id;
+  final int id;
   final String name;
   final String category;
   final List<MaterialVariant> variants;
@@ -13,7 +13,7 @@ class PrintMaterial {
 
   factory PrintMaterial.fromJson(Map<String, dynamic> json) {
     return PrintMaterial(
-      id: json['id'],
+      id: json['id'] as int,
       name: json['name'],
       category: json['category'],
       variants: (json['variants'] as List)
@@ -25,14 +25,11 @@ class PrintMaterial {
 
 class MaterialVariant {
   final String name;
-  final double price;
+  final num price;
 
   MaterialVariant({required this.name, required this.price});
 
   factory MaterialVariant.fromJson(Map<String, dynamic> json) {
-    return MaterialVariant(
-      name: json['name'],
-      price: (json['price'] as num).toDouble(),
-    );
+    return MaterialVariant(name: json['name'], price: json['price'] as num);
   }
 }
