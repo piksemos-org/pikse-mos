@@ -1,9 +1,10 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:video_player/video_player.dart';
 import 'package:piksel_mos/main.dart';
+
+enum AspectRatioCategory { portrait, square, landscape }
 
 class UploadScreen extends StatefulWidget {
   const UploadScreen({super.key});
@@ -15,25 +16,25 @@ class UploadScreen extends StatefulWidget {
 class _UploadScreenState extends State<UploadScreen> {
   final _formKey = GlobalKey<FormState>();
   final _captionController = TextEditingController();
+  final _titleController = TextEditingController();
   XFile? _mediaFile;
   bool _isLoading = false;
   VideoPlayerController? _videoController;
+  AspectRatioCategory _selectedRatio = AspectRatioCategory.square;
 
   Future<void> _pickMedia() async {
     final ImagePicker picker = ImagePicker();
-    // Allow picking both image and video
     final XFile? pickedFile = await picker.pickMedia();
 
     if (pickedFile != null) {
       setState(() {
         _mediaFile = pickedFile;
-        // If it's a video, initialize a controller to show a preview
         if (pickedFile.path.endsWith('.mp4') ||
             pickedFile.path.endsWith('.mov')) {
           _videoController?.dispose();
           _videoController = VideoPlayerController.file(File(_mediaFile!.path))
             ..initialize().then((_) {
-              setState(() {}); // Update UI when video is initialized
+              setState(() {});
               _videoController?.play();
               _videoController?.setLooping(true);
             });
@@ -42,6 +43,17 @@ class _UploadScreenState extends State<UploadScreen> {
           _videoController = null;
         }
       });
+    }
+  }
+
+  double _getAspectRatioValue(AspectRatioCategory category) {
+    switch (category) {
+      case AspectRatioCategory.portrait:
+        return 4 / 5;
+      case AspectRatioCategory.square:
+        return 1.0;
+      case AspectRatioCategory.landscape:
+        return 1.91 / 1;
     }
   }
 
@@ -69,24 +81,22 @@ class _UploadScreenState extends State<UploadScreen> {
       final fileName = 'post_${DateTime.now().millisecondsSinceEpoch}.$fileExt';
       final filePath = 'public/$fileName';
 
-      // 1. Upload File to Storage
       await supabase.storage.from('media_posts').upload(filePath, file);
 
-      // 2. Get Public URL
       final mediaUrl = supabase.storage
           .from('media_posts')
           .getPublicUrl(filePath);
 
-      // 3. Determine Media Type
       final mediaType = (fileExt == 'mp4' || fileExt == 'mov')
           ? 'video'
           : 'image';
 
-      // 4. Save Data to Table
       await supabase.from('posts').insert({
         'media_url': mediaUrl,
         'media_type': mediaType,
         'caption': _captionController.text.trim(),
+        'title': _titleController.text.trim(),
+        'media_aspect_ratio': _getAspectRatioValue(_selectedRatio),
         'user_id': supabase.auth.currentUser!.id,
       });
 
@@ -98,7 +108,6 @@ class _UploadScreenState extends State<UploadScreen> {
           backgroundColor: Colors.green,
         ),
       );
-      // Return true to signal a refresh is needed
       Navigator.of(context).pop(true);
     } catch (e) {
       if (!mounted) return;
@@ -120,6 +129,7 @@ class _UploadScreenState extends State<UploadScreen> {
   @override
   void dispose() {
     _captionController.dispose();
+    _titleController.dispose();
     _videoController?.dispose();
     super.dispose();
   }
@@ -135,7 +145,6 @@ class _UploadScreenState extends State<UploadScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              // Media Preview Area
               AspectRatio(
                 aspectRatio: 16 / 9,
                 child: Container(
@@ -153,16 +162,27 @@ class _UploadScreenState extends State<UploadScreen> {
                 ),
               ),
               const SizedBox(height: 16),
-
-              // Select Media Button
               OutlinedButton.icon(
                 icon: const Icon(Icons.perm_media_outlined),
                 label: const Text('Select Media'),
                 onPressed: _pickMedia,
               ),
               const SizedBox(height: 24),
-
-              // Caption Text Field
+              TextFormField(
+                controller: _titleController,
+                decoration: const InputDecoration(
+                  labelText: 'Title',
+                  hintText: 'Enter a title for your post...',
+                  border: OutlineInputBorder(),
+                ),
+                validator: (value) {
+                  if (value == null || value.isEmpty) {
+                    return 'Title cannot be empty.';
+                  }
+                  return null;
+                },
+              ),
+              const SizedBox(height: 16),
               TextFormField(
                 controller: _captionController,
                 decoration: const InputDecoration(
@@ -171,16 +191,37 @@ class _UploadScreenState extends State<UploadScreen> {
                   border: OutlineInputBorder(),
                 ),
                 maxLines: 3,
-                validator: (value) {
-                  if (value == null || value.isEmpty) {
-                    return 'Caption cannot be empty.';
+              ),
+              const SizedBox(height: 24),
+              DropdownButtonFormField<AspectRatioCategory>(
+                value: _selectedRatio,
+                decoration: const InputDecoration(
+                  labelText: 'Aspect Ratio',
+                  border: OutlineInputBorder(),
+                ),
+                items: const [
+                  DropdownMenuItem(
+                    value: AspectRatioCategory.portrait,
+                    child: Text('Portrait (4:5)'),
+                  ),
+                  DropdownMenuItem(
+                    value: AspectRatioCategory.square,
+                    child: Text('Square (1:1)'),
+                  ),
+                  DropdownMenuItem(
+                    value: AspectRatioCategory.landscape,
+                    child: Text('Landscape (1.91:1)'),
+                  ),
+                ],
+                onChanged: (value) {
+                  if (value != null) {
+                    setState(() {
+                      _selectedRatio = value;
+                    });
                   }
-                  return null;
                 },
               ),
               const SizedBox(height: 24),
-
-              // Upload Button
               ElevatedButton(
                 onPressed: _isLoading ? null : _uploadPost,
                 style: ElevatedButton.styleFrom(

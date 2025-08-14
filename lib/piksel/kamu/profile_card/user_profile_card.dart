@@ -1,4 +1,3 @@
-import 'dart:io';
 import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
@@ -6,12 +5,12 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 
 class UserProfileCard extends StatefulWidget {
   final Map<String, dynamic> userData;
-  final VoidCallback onProfileUpdated; // PERBAIKAN: Callback function
+  final VoidCallback onProfileUpdated;
 
   const UserProfileCard({
     super.key,
     required this.userData,
-    required this.onProfileUpdated, // PERBAIKAN: Callback function
+    required this.onProfileUpdated,
   });
 
   @override
@@ -54,7 +53,6 @@ class _UserProfileCardState extends State<UserProfileCard> {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Foto profil berhasil diperbarui')),
         );
-        // PERBAIKAN KRUSIAL: Panggil callback untuk memberitahu parent
         widget.onProfileUpdated();
       }
     } catch (e) {
@@ -73,20 +71,17 @@ class _UserProfileCardState extends State<UserProfileCard> {
     final email = widget.userData['email'] ?? 'email@pengguna.com';
     final role = widget.userData['role'] ?? 'user';
 
-    // PERBAIKAN: Memaksa rasio kartu menjadi 3:4
     return AspectRatio(
       aspectRatio: 3 / 4,
       child: Card(
         margin: const EdgeInsets.symmetric(horizontal: 16),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        clipBehavior:
-            Clip.antiAlias, // PERBAIKAN: Memastikan corner tetap tumpul
+        clipBehavior: Clip.antiAlias,
         child: InkWell(
           onTap: _uploadAvatar,
           child: Stack(
             fit: StackFit.expand,
             children: [
-              // Latar belakang gambar
               if (avatarUrl != null)
                 Image.network(
                   avatarUrl,
@@ -100,8 +95,6 @@ class _UserProfileCardState extends State<UserProfileCard> {
                 )
               else
                 _buildPlaceholder(),
-
-              // Gradient Overlay
               Container(
                 decoration: BoxDecoration(
                   gradient: LinearGradient(
@@ -112,8 +105,6 @@ class _UserProfileCardState extends State<UserProfileCard> {
                   ),
                 ),
               ),
-
-              // Teks Info
               Positioned(
                 bottom: 16,
                 left: 16,
@@ -142,8 +133,6 @@ class _UserProfileCardState extends State<UserProfileCard> {
                   ],
                 ),
               ),
-
-              // Badge Role
               Positioned(
                 bottom: 16,
                 right: 16,

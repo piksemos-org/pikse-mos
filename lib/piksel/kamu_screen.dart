@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:piksel_mos/main.dart'; // Pastikan import ValueNotifier ada
+import 'package:piksel_mos/main.dart';
 import 'package:piksel_mos/piksel/kamu/profile_card/user_profile_card.dart';
 import 'package:piksel_mos/piksel/kamu/profile_navigation/navigation_grid.dart';
 import 'package:piksel_mos/piksel/kamu/widgets/settings_card.dart';
@@ -22,7 +22,6 @@ class _KamuScreenState extends State<KamuScreen> {
   }
 
   Future<void> _fetchUserProfile() async {
-    // Menampilkan loading indicator saat mengambil data
     if (mounted) {
       setState(() {
         _isLoading = true;
@@ -31,7 +30,7 @@ class _KamuScreenState extends State<KamuScreen> {
 
     try {
       final user = supabase.auth.currentUser;
-      if (user == null) throw 'User tidak ditemukan';
+      if (user == null) throw 'User not found';
 
       final response = await supabase
           .from('users')
@@ -51,7 +50,7 @@ class _KamuScreenState extends State<KamuScreen> {
           _isLoading = false;
         });
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Gagal memuat profil: ${e.toString()}')),
+          SnackBar(content: Text('Failed to load profile: ${e.toString()}')),
         );
       }
     }
@@ -60,57 +59,50 @@ class _KamuScreenState extends State<KamuScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      // PERBAIKAN: Latar belakang utama diatur di sini
       backgroundColor: const Color(0xFF069494),
       body: _isLoading
           ? const Center(child: CircularProgressIndicator(color: Colors.white))
           : CustomScrollView(
               slivers: [
-                // PERBAIKAN: Header transparan yang kosong dan menempel
-                const SliverAppBar(
+                SliverAppBar(
+                  toolbarHeight: 45.0,
                   backgroundColor: Colors.transparent,
                   elevation: 0,
                   pinned: true,
-                  title: SizedBox.shrink(), // Judul dikosongkan
+                  title: const Text(''),
                 ),
-
-                // PERBAIKAN: Kartu profil diletakkan sebagai item pertama di scroll view
                 SliverToBoxAdapter(
                   child: UserProfileCard(
-                    // Mengirim seluruh data pengguna
                     userData: _userData ?? {},
-                    // PERBAIKAN KRUSIAL: Mengirim fungsi refresh ke child widget
                     onProfileUpdated: _fetchUserProfile,
                   ),
                 ),
-
-                // Widget lainnya
                 SliverToBoxAdapter(
                   child: Column(
                     children: [
                       const NavigationGrid(),
                       SettingsCard(
-                        title: 'Pengaturan Profil',
+                        title: 'Profile Settings',
                         items: const [
-                          {'icon': Icons.edit, 'title': 'Edit Profil'},
-                          {'icon': Icons.security, 'title': 'Keamanan'},
+                          {'icon': Icons.edit, 'title': 'Edit Profile'},
+                          {'icon': Icons.security, 'title': 'Security'},
                         ],
                       ),
                       SettingsCard(
-                        title: 'Area Dukungan',
+                        title: 'Support Area',
                         items: const [
                           {
                             'icon': Icons.description,
-                            'title': 'Syarat & Ketentuan',
+                            'title': 'Terms & Conditions',
                           },
-                          {'icon': Icons.support_agent, 'title': 'Bantuan CS'},
+                          {'icon': Icons.support_agent, 'title': 'Helpdesk'},
                         ],
                       ),
                       Padding(
                         padding: const EdgeInsets.all(16.0),
                         child: ElevatedButton.icon(
                           icon: const Icon(Icons.logout),
-                          label: const Text('Keluar'),
+                          label: const Text('Logout'),
                           style: ElevatedButton.styleFrom(
                             minimumSize: const Size.fromHeight(50),
                             backgroundColor: Colors.red.shade600,

@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:piksel_mos/main.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:video_player/video_player.dart';
+import 'package:piksel_mos/information/notification_screen.dart';
+import 'package:piksel_mos/information/message_screen.dart';
 import 'package:readmore/readmore.dart';
 
 final supabase = Supabase.instance.client;
@@ -14,7 +16,7 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
-  late final Future<List<Map<String, dynamic>>> _postsFuture;
+  late Future<List<Map<String, dynamic>>> _postsFuture;
 
   @override
   void initState() {
@@ -30,7 +32,6 @@ class _HomeScreenState extends State<HomeScreen> {
           .order('created_at', ascending: false);
       return List<Map<String, dynamic>>.from(response);
     } catch (e) {
-      // Rethrow the error to be caught by the FutureBuilder
       throw Exception('Failed to load posts: $e');
     }
   }
@@ -49,8 +50,30 @@ class _HomeScreenState extends State<HomeScreen> {
                 fontWeight: FontWeight.bold,
               ),
             ),
+            actions: [
+              IconButton(
+                icon: const Icon(Icons.notifications_outlined),
+                onPressed: () {
+                  showModalBottomSheet(
+                    context: context,
+                    isScrollControlled: true,
+                    builder: (context) => const NotificationScreen(),
+                  );
+                },
+              ),
+              IconButton(
+                icon: const Icon(Icons.chat_bubble_outline_rounded),
+                onPressed: () {
+                  showModalBottomSheet(
+                    context: context,
+                    isScrollControlled: true,
+                    builder: (context) => const MessageScreen(),
+                  );
+                },
+              ),
+            ],
             backgroundColor: const Color(0xFF069494),
-            elevation: 2,
+            elevation: 0,
           ),
           body: FutureBuilder<List<Map<String, dynamic>>>(
             future: _postsFuture,
@@ -111,84 +134,67 @@ class PostCard extends StatelessWidget {
     final mediaUrl = post['media_url'] as String?;
     final mediaType = post['media_type'] as String?;
     final caption = post['caption'] as String?;
+    final aspectRatio = post['media_aspect_ratio'] as double? ?? 1.0;
 
-    return Card(
-      elevation: 2.0,
-      margin: const EdgeInsets.symmetric(vertical: 8.0, horizontal: 10.0),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Media (Image or Video)
-          if (mediaUrl != null && mediaType != null)
-            AspectRatio(
-              aspectRatio: 4 / 5, // Common aspect ratio for feeds
-              child: mediaType == 'video'
-                  ? VideoPlayerWidget(videoUrl: mediaUrl)
-                  : Image.network(
-                      mediaUrl,
-                      fit: BoxFit.cover,
-                      loadingBuilder: (context, child, loadingProgress) {
-                        if (loadingProgress == null) return child;
-                        return const Center(child: CircularProgressIndicator());
-                      },
-                      errorBuilder: (context, error, stackTrace) {
-                        return const Center(
-                          child: Icon(Icons.error, color: Colors.red),
-                        );
-                      },
-                    ),
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const ListTile(
+          leading: CircleAvatar(
+            // You can use a placeholder or a specific admin image
+            backgroundImage: NetworkImage('https://placekitten.com/g/200/200'),
+          ),
+          title: Text(
+            "Piksel Mos Admin",
+            style: TextStyle(fontWeight: FontWeight.bold),
+          ),
+        ),
+        if (mediaUrl != null && mediaType != null)
+          AspectRatio(
+            aspectRatio: aspectRatio,
+            child: mediaType == 'video'
+                ? VideoPlayerWidget(videoUrl: mediaUrl)
+                : Image.network(
+                    mediaUrl,
+                    fit: BoxFit.cover,
+                    loadingBuilder: (context, child, loadingProgress) {
+                      if (loadingProgress == null) return child;
+                      return const Center(child: CircularProgressIndicator());
+                    },
+                    errorBuilder: (context, error, stackTrace) {
+                      return const Center(
+                        child: Icon(Icons.error, color: Colors.red),
+                      );
+                    },
+                  ),
+          ),
+        Row(
+          children: [
+            IconButton(
+              icon: const Icon(Icons.favorite_border),
+              onPressed: () {},
             ),
-
-          // Action Buttons
+            IconButton(
+              icon: const Icon(Icons.share_outlined),
+              onPressed: () {},
+            ),
+          ],
+        ),
+        if (caption != null && caption.isNotEmpty)
           Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 8.0, vertical: 4.0),
-            child: Row(
-              children: [
-                IconButton(
-                  icon: const Icon(Icons.favorite_border_outlined),
-                  onPressed: () {
-                    // Handle like action
-                  },
-                ),
-                IconButton(
-                  icon: const Icon(Icons.share_outlined),
-                  onPressed: () {
-                    // Handle share action
-                  },
-                ),
-              ],
+            padding: const EdgeInsets.symmetric(horizontal: 16.0),
+            child: ReadMoreText(
+              caption,
+              trimLines: 2,
+              colorClickableText: Colors.pink,
+              trimMode: TrimMode.Line,
+              trimCollapsedText: '...more',
+              trimExpandedText: ' show less',
+              style: Theme.of(context).textTheme.bodyMedium,
             ),
           ),
-
-          // Caption
-          if (caption != null && caption.isNotEmpty)
-            Padding(
-              padding: const EdgeInsets.symmetric(
-                horizontal: 16.0,
-                vertical: 8.0,
-              ),
-              child: ReadMoreText(
-                caption,
-                trimLines: 2,
-                colorClickableText: Colors.pink,
-                trimMode: TrimMode.Line,
-                trimCollapsedText: '...more',
-                trimExpandedText: ' less',
-                style: Theme.of(context).textTheme.bodyMedium,
-                moreStyle: const TextStyle(
-                  fontSize: 14,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.blue,
-                ),
-                lessStyle: const TextStyle(
-                  fontSize: 14,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.blue,
-                ),
-              ),
-            ),
-        ],
-      ),
+        const Divider(),
+      ],
     );
   }
 }
@@ -209,11 +215,10 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
   @override
   void initState() {
     super.initState();
-    _controller = VideoPlayerController.networkUrl(Uri.parse(widget.videoUrl));
+    // ignore: deprecated_member_use
+    _controller = VideoPlayerController.network(widget.videoUrl);
     _initializeVideoPlayerFuture = _controller.initialize().then((_) {
       _controller.setLooping(true);
-      // Start playing the video automatically.
-      // You might want to add a play button overlay instead.
       _controller.play();
       setState(() {});
     });
@@ -231,10 +236,7 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
       future: _initializeVideoPlayerFuture,
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.done) {
-          return AspectRatio(
-            aspectRatio: _controller.value.aspectRatio,
-            child: VideoPlayer(_controller),
-          );
+          return VideoPlayer(_controller);
         } else {
           return const Center(child: CircularProgressIndicator());
         }

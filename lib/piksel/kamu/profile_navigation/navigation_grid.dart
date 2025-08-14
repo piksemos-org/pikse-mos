@@ -66,17 +66,16 @@ class _NavigationItem extends StatelessWidget {
           children: [
             Icon(icon, size: 28, color: Theme.of(context).primaryColor),
             const SizedBox(height: 8),
-            // PERBAIKAN: Memastikan teks tidak overflow dan ukurannya pas
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 4.0),
               child: Text(
                 label,
                 textAlign: TextAlign.center,
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
                 style: Theme.of(
                   context,
                 ).textTheme.bodySmall?.copyWith(fontWeight: FontWeight.w600),
-                maxLines: 2, // Izinkan teks menjadi dua baris
-                overflow: TextOverflow.ellipsis,
               ),
             ),
           ],
