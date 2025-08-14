@@ -3,7 +3,7 @@
 'use client'; // Komponen interaktif
 
 import { useEffect, useState } from 'react';
-import { supabase } from '../../lib/supabaseClient'; // Sesuaikan path jika perlu
+import { supabase } from '@/lib/supabaseClient'; // Sesuaikan path jika perlu
 
 export default function DashboardPage() {
   const [user, setUser] = useState(null);

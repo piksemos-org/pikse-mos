@@ -3,7 +3,7 @@
 'use client'; // Baris ini penting, memberitahu Next.js bahwa ini adalah komponen interaktif
 
 import { useState } from 'react';
-import { supabase } from '../lib/supabaseClient'; // Impor koneksi supabase
+import { supabase } from '@/lib/supabaseClient';
 
 export default function LoginPage() {
   // State untuk menyimpan input dari pengguna (seperti TextEditingController di Flutter)
