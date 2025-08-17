@@ -14,8 +14,7 @@ class MainScreen extends StatefulWidget {
 
 class _MainScreenState extends State<MainScreen> {
   int _selectedIndex = 2; // Default to Home
-
-  static const List<Widget> _widgetOptions = <Widget>[
+  static const List<Widget> _widgetOptions = const [
     CetakScreen(),
     DesainScreen(),
     HomeScreen(),
@@ -29,8 +28,8 @@ class _MainScreenState extends State<MainScreen> {
     });
   }
 
-  @override
-  Widget build(BuildContext context) {
+@override
+Widget build(BuildContext context) {
     return Scaffold(
       body: Center(child: _widgetOptions.elementAt(_selectedIndex)),
       bottomNavigationBar: BottomNavigationBar(

@@ -39,6 +39,16 @@ dependencies:
   video_player: ^2.8.6
   readmore: ^3.0.0
   image_picker: ^1.1.2
+  file_picker: ^8.0.5
+  pro_image_editor: ^11.4.1 # Atau versi terbaru
+  flutter_colorpicker: ^1.0.3 # Untuk color picker
+  path_provider: ^2.0.0 # Sering dibutuhkan oleh package file
+  image_gallery_saver: ^2.3.0 # Updated version with null safety and AndroidX support
+  gal: ^2.2.0 # Untuk fitur galeri lainnya
+  permission_handler: ^11.0.1 # Untuk izin penyimpanan
+  url_launcher: ^6.1.12 # Untuk mengirim ke WhatsApp
+  provider: ^6.0.0
+  google_fonts: ^6.0.0
 
 dev_dependencies:
   flutter_test:

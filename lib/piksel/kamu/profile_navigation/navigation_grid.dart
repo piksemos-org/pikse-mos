@@ -7,7 +7,7 @@ class NavigationGrid extends StatelessWidget {
   Widget build(BuildContext context) {
     final List<Map<String, dynamic>> navigationItems = [
       {'icon': Icons.send, 'label': 'Sending', 'onTap': () {}},
-      {'icon': Icons.payment, 'label': 'Payment Waiting', 'onTap': () {}},
+      {'icon': Icons.payment, 'label': 'Payment', 'onTap': () {}},
       {'icon': Icons.history, 'label': 'History', 'onTap': () {}},
       {
         'icon': Icons.folder_outlined,
@@ -69,7 +69,7 @@ class _NavigationItem extends StatelessWidget {
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 4.0),
               child: Text(
-                label,
+                label == 'Payment Waiting' ? 'Payment' : label,
                 textAlign: TextAlign.center,
                 maxLines: 2,
                 overflow: TextOverflow.ellipsis,

@@ -32,4 +32,6 @@ class MaterialVariant {
   factory MaterialVariant.fromJson(Map<String, dynamic> json) {
     return MaterialVariant(name: json['name'], price: json['price'] as num);
   }
+
+  Map<String, dynamic> toJson() => {'name': name, 'price': price};
 }

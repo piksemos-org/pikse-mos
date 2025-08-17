@@ -1,26 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:piksel_mos/main.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
+
 import 'package:video_player/video_player.dart';
 import 'package:readmore/readmore.dart';
 import 'package:piksel_mos/information/notification_screen.dart';
 import 'package:piksel_mos/information/message_screen.dart';
 
-class HomeScreen extends StatefulWidget {
+class HomeScreen extends StatelessWidget {
   const HomeScreen({super.key});
-
-  @override
-  State<HomeScreen> createState() => _HomeScreenState();
-}
-
-class _HomeScreenState extends State<HomeScreen> {
-  late Future<List<dynamic>> _postsFuture;
-
-  @override
-  void initState() {
-    super.initState();
-    _postsFuture = _fetchPosts();
-  }
 
   Future<List<dynamic>> _fetchPosts() async {
     try {
@@ -30,11 +17,6 @@ class _HomeScreenState extends State<HomeScreen> {
           .order('created_at', ascending: false);
       return response;
     } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text('Gagal memuat postingan: $e')));
-      }
       return [];
     }
   }
@@ -70,7 +52,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   showModalBottomSheet(
                     context: context,
                     isScrollControlled: true,
-                    builder: (context) => const MessageScreen(),
+builder: (context) => MessageScreen(),
                   );
                 },
               ),
@@ -78,11 +60,12 @@ class _HomeScreenState extends State<HomeScreen> {
             backgroundColor: const Color(0xFF069494),
             elevation: 0,
           ),
+          floatingActionButton: null, // Remove FAB
           body: FutureBuilder<List<dynamic>>(
-            future: _postsFuture,
+            future: _fetchPosts(),
             builder: (context, snapshot) {
               if (snapshot.connectionState == ConnectionState.waiting) {
-                return const Center(child: CircularProgressIndicator());
+                return Center(child: const CircularProgressIndicator());
               }
               if (snapshot.hasError) {
                 return Center(child: Text('Error: ${snapshot.error}'));
@@ -101,26 +84,6 @@ class _HomeScreenState extends State<HomeScreen> {
               );
             },
           ),
-          floatingActionButton: role == 'admin'
-              ? FloatingActionButton(
-                  onPressed: () async {
-                    final result = await Navigator.pushNamed(
-                      context,
-                      '/upload',
-                    );
-                    if (result == true) {
-                      setState(() {
-                        _postsFuture = _fetchPosts();
-                      });
-                    }
-                  },
-                  backgroundColor: const Color(0xFF069494),
-                  child: const Icon(
-                    Icons.add_a_photo_outlined,
-                    color: Colors.white,
-                  ),
-                )
-              : null,
         );
       },
     );
@@ -137,17 +100,15 @@ class PostCard extends StatelessWidget {
     final mediaUrl = post['media_url'] as String?;
     final mediaType = post['media_type'] as String?;
     final caption = post['caption'] as String?;
-    final title = post['title'] as String?; // Ambil judul dari data
 
-    // PERBAIKAN: Konversi nilai aspect ratio dengan aman
+    final title = post['title'] as String?;
+
     final aspectRatioValue = post['media_aspect_ratio'];
     final double aspectRatio = (aspectRatioValue as num? ?? 1.0).toDouble();
 
-    // Menggunakan Column untuk layout edge-to-edge
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // Header Postingan (Sekarang hanya judul)
         if (title != null && title.isNotEmpty)
           Padding(
             padding: const EdgeInsets.symmetric(
@@ -163,10 +124,9 @@ class PostCard extends StatelessWidget {
           ),
         if (title != null && title.isNotEmpty) const SizedBox(height: 4),
 
-        // Konten Media dengan AspectRatio dinamis
         if (mediaUrl != null && mediaType != null)
           AspectRatio(
-            aspectRatio: aspectRatio, // Menggunakan nilai yang sudah dikonversi
+            aspectRatio: aspectRatio,
             child: mediaType == 'video'
                 ? VideoPlayerWidget(videoUrl: mediaUrl)
                 : Image.network(
@@ -184,7 +144,6 @@ class PostCard extends StatelessWidget {
                   ),
           ),
 
-        // Tombol Aksi
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 8.0, vertical: 4.0),
           child: Row(
@@ -201,7 +160,6 @@ class PostCard extends StatelessWidget {
           ),
         ),
 
-        // Deskripsi/Caption
         if (caption != null && caption.isNotEmpty)
           Padding(
             padding: const EdgeInsets.symmetric(

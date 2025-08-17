@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-import '../models/print_material.dart';
+
+import '../piksel/desain/models/print_material.dart';
+import '../piksel/cetak/Brief_Produksi_screen.dart';
 
 class MaterialSelectionScreen extends StatefulWidget {
   const MaterialSelectionScreen({super.key});
@@ -32,6 +34,18 @@ class _MaterialSelectionScreenState extends State<MaterialSelectionScreen> {
     } catch (e) {
       throw Exception('Gagal memuat bahan: ${e.toString()}');
     }
+  }
+
+  void _onMaterialVariantSelected(
+    BuildContext context,
+    Map<String, dynamic> variant,
+  ) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => BriefProduksiScreen(variant: variant),
+      ),
+    );
   }
 
   @override
@@ -78,9 +92,10 @@ class _MaterialSelectionScreenState extends State<MaterialSelectionScreen> {
                             color: Colors.green,
                           ),
                         ),
-                        onTap: () {
-                          // Handle variant selection
-                        },
+                        onTap: () => _onMaterialVariantSelected(
+                          context,
+                          variant.toJson(),
+                        ),
                       ),
                     )
                     .toList(),

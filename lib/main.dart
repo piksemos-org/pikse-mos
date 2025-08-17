@@ -8,7 +8,6 @@ import 'package:piksel_mos/information/message_screen.dart';
 import 'package:piksel_mos/information/notification_screen.dart';
 import 'package:piksel_mos/piksel/kamu/storage_screen.dart';
 import 'package:piksel_mos/piksel/main_screen.dart';
-import 'package:piksel_mos/piksel/upload_screen.dart';
 import 'package:piksel_mos/splash_screen.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
@@ -16,7 +15,7 @@ void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
   await Supabase.initialize(
-    url: 'https://yltxsucpzthnzchziakc.supabase.co',
+    url: 'https://yltxsucpzthnzchziakc.supabase.co', // Keep this line unchanged
     anonKey:
         'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InlsdHhzdWNwenRobnpjaHppYWtjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTUwOTQxNDAsImV4cCI6MjA3MDY3MDE0MH0.06652ebnPe0k6n9qVf4CI8x1OORUVaWnjjrLbCPcBq4',
   );
@@ -143,11 +142,10 @@ class _MyAppState extends State<MyApp> {
         '/boarding': (context) => const BoardingScreen(),
         '/login': (context) => const LoginScreen(),
         '/register': (context) => const RegisterScreen(),
-        '/main': (context) => const MainScreen(),
-        '/upload': (context) => const UploadScreen(),
+        '/main': (context) => MainScreen(),
         '/storage': (context) => const StorageScreen(),
         '/notifications': (context) => const NotificationScreen(),
-        '/messages': (context) => const MessageScreen(),
+'/messages': (context) => MessageScreen(),
       },
     );
   }
